@@ -35,8 +35,6 @@ apiClient.interceptors.response.use(
       switch (status) {
         case 401:
           console.error('Unauthorized: 세션이 만료되었거나 인증되지 않은 사용자입니다.');
-          // 세션 만료 시 로그인 페이지로 리다이렉트하는 로직 추가
-          // window.location.href = '/login';
           break;
         case 403:
           console.error('Forbidden: 접근 권한이 없습니다.');

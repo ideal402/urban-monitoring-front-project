@@ -1,0 +1,173 @@
+.signup-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* 수정된 부분: 카드 크기 60%, 최소 크기 480px */
+.signup-card {
+  background: #ffffff;
+  width: 60%; /* 전체 뷰포트 너비의 60% */
+  max-width: 600px;
+  min-width: 480px; /* 창이 작아져도 최소 480px 유지 */
+  padding: 48px 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.signup-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.signup-logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+}
+
+.signup-header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.signup-header p {
+  font-size: 15px;
+  color: #666;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+/* 수정된 부분: 이메일 입력창과 버튼을 나란히 배치하기 위한 Flexbox 컨테이너 */
+.email-input-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.email-input-wrapper input {
+  flex: 1; /* 남은 공간을 input이 꽉 채우도록 설정 */
+}
+
+/* 중복확인 버튼 스타일 추가 */
+.duplicate-check-btn {
+  padding: 0 16px;
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+  transition: all 0.2s ease;
+}
+
+.duplicate-check-btn:hover {
+  background-color: #e9ecef;
+  border-color: #ccc;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.signup-submit-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 16px;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.signup-submit-btn:hover {
+  background-color: #333333;
+}
+
+.signup-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+  font-size: 14px;
+  color: #888;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 14px;
+  margin-left: 8px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-btn:hover {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+/* 수정: 라벨과 에러 메시지를 한 줄에 배치 */
+.label-error-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0; /* wrapper에서 마진을 관리하므로 0으로 초기화 */
+}
+
+/* 추가: 에러 텍스트 스타일 (빨간 글씨) */
+.error-text {
+  color: #ef4444; /* 명시성이 높은 Red 컬러 */
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+/* 에러가 발생한 input의 테두리를 붉은색으로 변경하고 싶다면 아래 코드도 추가 가능합니다. */
+.input-group input:invalid[data-error="true"] {
+  border-color: #ef4444;
+}
