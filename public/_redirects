@@ -1,0 +1,4 @@
+/auth/* http://35.216.69.116:8082/auth/:splat  200
+/map/* http://35.216.69.116:8082/map/:splat   200
+/user/* http://35.216.69.116:8082/user/:splat  200
+/* /index.html  200
