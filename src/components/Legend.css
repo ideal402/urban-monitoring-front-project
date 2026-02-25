@@ -1,7 +1,5 @@
 .legend-container {
-  position: absolute;
-  top: 80px; /* Navbar 바로 아래 우측 상단 */
-  right: 40px; 
+  
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 줌 컨트롤과 동일한 그림자 */
@@ -10,7 +8,6 @@
   flex-direction: row; /* 가로 배치 */
   align-items: center; /* 세로 중앙 정렬 */
   padding: 12px 20px;
-  z-index: 10;
   gap: 16px; /* 제목과 범례 리스트 사이 간격 */
 }
 

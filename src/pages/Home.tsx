@@ -19,12 +19,17 @@ import { MapContainer } from '../components/MapContainer';
 import { ZoomControl } from '../components/ZoomControl';
 import { Navbar, type LayerType } from '../components/Navbar';
 import { Legend } from '../components/Legend';
+import { RefreshControl } from '../components/RefrashControl';
 import './Home.css';
 
 export function Home() {
   // --- [상태 관리] ---
   const [rawGeoJson, setRawGeoJson] = useState<any>(null);
   const [rawApiData, setRawApiData] = useState<any[]>([]);
+  
+
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
   // 현재 활성화된 레이어 상태 (초기값: 인구밀집)
   const [activeLayer, setActiveLayer] = useState<LayerType>('population');
@@ -41,20 +46,33 @@ export function Home() {
   });
 
   // --- [데이터 페칭] ---
-  useEffect(() => {
-    const fetchRegionData = async () => {
-      try {
-        // Promise.all을 사용하여 GeoJSON과 실시간 데이터를 병렬로 요청
-        const [geoRes, apiData] = await Promise.all([
-          fetch(SEOUL_GEOJSON_URL).then(res => res.json()),
-          getCurrentMapData()
-        ]);
-        setRawGeoJson(geoRes);
-        setRawApiData(apiData);
-      } catch (error) {
-        console.error("데이터 로드 중 오류 발생:", error);
+  const fetchRegionData = async () => {
+    setIsRefreshing(true);
+    try {
+      const [geoRes, apiData] = await Promise.all([
+        fetch(SEOUL_GEOJSON_URL).then(res => res.json()),
+        getCurrentMapData()
+      ]);
+      
+      setRawGeoJson(geoRes);
+      setRawApiData(apiData);
+
+      // ✨ API 데이터에서 measurementTime을 추출하여 업데이트 시간으로 설정
+      if (apiData && apiData.length > 0 && apiData[0].measurementTime) {
+        setLastUpdated(new Date(apiData[0].measurementTime));
+      } else {
+        setLastUpdated(new Date()); 
       }
-    };
+
+    } catch (error) {
+      console.error("데이터 로드 중 오류 발생:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // 초기 마운트 시 한 번 실행
+  useEffect(() => {
     fetchRegionData();
   }, []);
 
@@ -104,7 +122,24 @@ export function Home() {
     <div className="app-layout">
       <Navbar activeLayer={activeLayer} onLayerChange={setActiveLayer} />
 
-      <Legend activeLayer={activeLayer} />
+      <div style={{
+        position: 'absolute',
+        top: '80px',
+        right: '40px',
+        display: 'flex',
+        gap: '16px', /* 새로고침과 범례 사이의 간격 */
+        zIndex: 10,
+        alignItems: 'flex-start' /* 위쪽 라인에 맞춰 정렬 */
+      }}>
+        {/* 왼쪽에 새로고침 배치 */}
+        <RefreshControl 
+          lastUpdated={lastUpdated} 
+          onRefresh={fetchRegionData} 
+          isRefreshing={isRefreshing} 
+        />
+        {/* 오른쪽에 범례 배치 */}
+        <Legend activeLayer={activeLayer} />
+      </div>
 
       <div className="ui-layer" style={{ 
         position: 'absolute', 

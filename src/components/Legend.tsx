@@ -9,8 +9,8 @@ export function Legend({ activeLayer }: LegendProps) {
   // 레이어별 범례 데이터 정의
   const legendData = {
     population: [
-      { label: '정체', color: 'rgb(231, 76, 60)' },
-      { label: '서행', color: 'rgb(230, 126, 34)' },
+      { label: '매우혼잡', color: 'rgb(231, 76, 60)' },
+      { label: '혼잡', color: 'rgb(230, 126, 34)' },
       { label: '보통', color: 'rgb(241, 196, 15)' },
       { label: '원활', color: 'rgb(46, 204, 113)' },
     ],
