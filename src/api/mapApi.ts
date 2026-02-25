@@ -9,3 +9,14 @@ export const getCurrentMapData = async () => {
   const response = await apiClient.get('/map/current');
   return response.data;
 };
+
+export const getRoadTrafficData = async (h3Indices: string[]) => {
+  try {
+    const response = await apiClient.post('/map/roads/traffic', h3Indices);
+    
+    return response.data;
+  } catch (error) {
+    console.error("도로 트래픽 데이터 호출 실패:", error);
+    return [];
+  }
+};

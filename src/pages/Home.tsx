@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import DeckGL from '@deck.gl/react';
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
+import { PathLayer } from '@deck.gl/layers'; // PathLayer 추가 임포트
 import MapGL from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { latLngToCell, gridDisk, polygonToCells } from 'h3-js';
-import { getCurrentMapData } from '../api/mapApi';
+import { getCurrentMapData, getRoadTrafficData } from '../api/mapApi'; // API 추가 임포트
 import { ZoomControl } from '../components/ZoomControl';
 import { Navbar } from '../components/Navbar';
 import './Home.css';
-
 
 const SEOUL_LAT = 37.5665;
 const SEOUL_LNG = 126.9780;
@@ -19,9 +19,10 @@ const BOUNDS = {
 };
 
 export function Home() {
-  // 1. 원본 데이터 상태 관리 (Fetch 후 한 번만 저장)
+  // 1. 상태 관리
   const [rawGeoJson, setRawGeoJson] = useState<any>(null);
   const [rawApiData, setRawApiData] = useState<any[]>([]);
+  const [rawRoadData, setRawRoadData] = useState<any[]>([]); // 도로 데이터 상태 추가
 
   const [viewState, setViewState] = useState({
     longitude: SEOUL_LNG,
@@ -39,9 +40,9 @@ export function Home() {
     return { resolution: 9, k: 81 };
   }, [viewState.zoom]);
 
-  // 원본 데이터 Fetch (초기 마운트 시 1회 실행)
+  // 원본 지역 데이터 Fetch (초기 마운트 시 1회 실행)
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchRegionData = async () => {
       try {
         const [geoRes, apiData] = await Promise.all([
           fetch(SEOUL_GEOJSON_URL).then(res => res.json()),
@@ -50,14 +51,12 @@ export function Home() {
         setRawGeoJson(geoRes);
         setRawApiData(apiData);
       } catch (error) {
-        console.error("데이터 로드 중 오류 발생:", error);
+        console.error("지역 데이터 로드 중 오류 발생:", error);
       }
     };
-    fetchData();
+    fetchRegionData();
   }, []);
 
-  // 3. 해상도(currentRes) 변경 시 H3 인덱스 재계산 로직
-  
   // 3-1. 전체 커버리지 H3 그리드 생성
   const hexData = useMemo(() => {
     const centerHex = latLngToCell(SEOUL_LAT, SEOUL_LNG, currentRes);
@@ -85,7 +84,21 @@ export function Home() {
     return validCells;
   }, [rawGeoJson, currentRes]);
 
-  // 3-3. API 데이터 H3 매핑 Map 생성
+  // [신규] 3-3. 서울 H3 인덱스가 계산되면 도로 데이터를 백엔드에서 불러옵니다.
+  useEffect(() => {
+    if (seoulH3Set.size === 0) return;
+
+    const fetchRoadData = async () => {
+      // Set을 Array로 변환하여 POST Body로 전송
+      const h3IndicesArray = Array.from(seoulH3Set);
+      const roadData = await getRoadTrafficData(h3IndicesArray);
+      setRawRoadData(roadData);
+    };
+
+    fetchRoadData();
+  }, [seoulH3Set]);
+
+  // 3-4. API 데이터 H3 매핑 Map 생성 (인구 혼잡도용)
   const congestionData = useMemo(() => {
     if (!rawApiData || rawApiData.length === 0) return new Map<string, number>();
     
@@ -99,20 +112,39 @@ export function Home() {
     return newCongestionMap;
   }, [rawApiData, currentRes]);
 
+  // [신규] 3-5. 도로 xyList 파싱 (문자열 -> [lng, lat] 2차원 배열)
+  const parsedRoadData = useMemo(() => {
+    if (!rawRoadData || rawRoadData.length === 0) return [];
+
+    return rawRoadData.map((road: any) => {
+      if (!road.xyList) return { ...road, path: [] };
+
+      // 백엔드에서 내려온 "경도_위도|경도_위도" 형식을 deck.gl 규격으로 파싱
+      const pathCoordinates = road.xyList.split('|').map((point: string) => {
+        const [lng, lat] = point.split('_');
+        return [parseFloat(lng), parseFloat(lat)];
+      });
+
+      return {
+        ...road,
+        path: pathCoordinates
+      };
+    }).filter((road: any) => road.path.length > 1); // 선을 그릴 수 있는 유효한 데이터만 필터링
+  }, [rawRoadData]);
+
   const isDataLoaded = !!rawGeoJson && rawApiData.length > 0;
 
   // 4. deck.gl 레이어 설정
   const layers = [
+    // 기존 지역 인구 혼잡도 레이어
     new H3HexagonLayer({
       id: 'h3-hexagon-layer',
       data: hexData,
       pickable: true,
       extruded: false, 
       getHexagon: (d: any) => d.hex,
-      
       getFillColor: (d: any) => {
         if (!isDataLoaded) return [0, 0, 0, 0];
-
         if (!seoulH3Set.has(d.hex)) return [255, 255, 255, 0]; 
 
         const level = congestionData.get(d.hex);
@@ -128,10 +160,31 @@ export function Home() {
           return [150, 150, 150, 50];
         }
       },
-      
-      // 상태 업데이트 트리거
       updateTriggers: {
         getFillColor: [seoulH3Set, isDataLoaded, congestionData] 
+      }
+    }),
+
+    // [신규] 도로 교통 상황 레이어
+    new PathLayer({
+      id: 'road-traffic-layer',
+      data: parsedRoadData,
+      pickable: true,
+      widthScale: 1,
+      widthMinPixels: 3, // 선의 최소 두께
+      getPath: (d: any) => d.path,
+      getColor: (d: any) => {
+        // 백엔드에서 전달된 정체 지수(trafficIdx)에 따른 색상 분기
+        switch (d.trafficIdx) {
+          case '정체': return [231, 76, 60, 255]; // 빨간색
+          case '서행': return [241, 196, 15, 255]; // 노란색
+          case '원활': return [46, 204, 113, 255]; // 초록색
+          default: return [150, 150, 150, 200];    // 회색 (상태 없음)
+        }
+      },
+      getWidth: 4, // 도로 선의 기본 두께 설정
+      updateTriggers: {
+        getColor: [parsedRoadData]
       }
     })
   ];
@@ -169,9 +222,12 @@ export function Home() {
           onViewStateChange={handleViewStateChange}
           controller={true}
           layers={layers}
+          getTooltip={({object}: any) => object && (
+            object.roadNm ? `${object.roadNm}: ${object.trafficIdx} (${object.spd}km/h)` : null
+          )}
         >
           <MapGL
-            mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+            mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" // 도로가 잘 보이도록 다크 테마 권장
           />
         </DeckGL>
         <ZoomControl
