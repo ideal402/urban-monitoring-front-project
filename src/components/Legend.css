@@ -1,0 +1,52 @@
+.legend-container {
+  position: absolute;
+  top: 80px; /* Navbar 바로 아래 우측 상단 */
+  right: 40px; 
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 줌 컨트롤과 동일한 그림자 */
+  
+  display: flex;
+  flex-direction: row; /* 가로 배치 */
+  align-items: center; /* 세로 중앙 정렬 */
+  padding: 12px 20px;
+  z-index: 10;
+  gap: 16px; /* 제목과 범례 리스트 사이 간격 */
+}
+
+.legend-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333333;
+  border-right: 1px solid #eeeeee; /* 항목들과 구분되는 세로 선 */
+  padding-right: 16px;
+  white-space: nowrap;
+}
+
+.legend-list {
+  display: grid;
+  /* 가로 간격 16px, 세로(줄바꿈 시) 간격 10px */
+  gap: 10px 16px; 
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 육각형과 글자 사이 간격 */
+}
+
+/* 정육각형 아이콘 유지 */
+.hexagon-icon {
+  width: 14px;
+  height: 16px; 
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  flex-shrink: 0;
+}
+
+.legend-label {
+  font-size: 13px;
+  color: #555555;
+  font-weight: 500;
+  white-space: nowrap; /* 글씨가 줄바꿈되지 않도록 방지 */
+}

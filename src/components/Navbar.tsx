@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
 import './Navbar.css';
 import { LoginModal } from './LoginModal';
-import { useAuth } from '../context/AuthContext'; // 1. 전역 Hook 임포트
+import { useAuth } from '../context/AuthContext';
 
-export const Navbar: React.FC = () => {
+// 1. 허용되는 레이어 타입 정의 (Home 컴포넌트와 공유하기 위해 export)
+export type LayerType = 'population' | 'weather' | 'air' | 'bus';
+
+// 2. 부모 컴포넌트(Home)로부터 주입받을 Props 인터페이스 정의
+interface NavbarProps {
+  activeLayer: LayerType;
+  onLayerChange: (layer: LayerType) => void;
+}
+
+// 3. 컴포넌트 파라미터로 Props 구조 분해 할당
+export const Navbar: React.FC<NavbarProps> = ({ activeLayer, onLayerChange }) => {
   const { isAuthenticated, logout } = useAuth();
   
-  const [activeLayer, setActiveLayer] = useState<string>('population');
+  // 기존 로컬 상태였던 const [activeLayer, setActiveLayer] = useState(...)는 제거합니다.
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
 
-  const toggleButtons = [
+  // 버튼 배열의 id 타입을 LayerType으로 지정
+  const toggleButtons: { id: LayerType; label: string; icon: string }[] = [
     { id: 'population', label: '인구밀집', icon: '/Users.svg' },
     { id: 'weather', label: '기상상태', icon: '/Sun.svg' },
     { id: 'air', label: '대기질', icon: '/Leaf.svg' },
@@ -35,7 +46,8 @@ export const Navbar: React.FC = () => {
               <button
                 key={btn.id}
                 className={`hex-btn ${activeLayer === btn.id ? 'active' : ''}`}
-                onClick={() => setActiveLayer(btn.id)}
+                // 4. 로컬 상태 변경 함수 대신 부모로부터 전달받은 onLayerChange 호출
+                onClick={() => onLayerChange(btn.id)}
                 title={btn.label}
               >
                 <img src={btn.icon} className="hex-icon" />
@@ -43,7 +55,6 @@ export const Navbar: React.FC = () => {
             ))}
           </div>
           
-          {/* 3. Context의 isAuthenticated 값에 따른 조건부 렌더링 */}
           {isAuthenticated ? (
             <button className="login-btn" onClick={logout}>
               로그아웃
@@ -56,7 +67,6 @@ export const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* 인증되지 않았을 때만 로그인 모달 렌더링 */}
       {!isAuthenticated && (
         <LoginModal 
           isOpen={isLoginModalOpen} 
