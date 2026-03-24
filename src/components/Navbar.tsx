@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeLayer, onLayerChange }) =>
     <>
       <nav className="navbar-container">
         <div className="navbar-left">
-          <img src="/logo.png" alt="Logo" className="logo-img" style={{height:"56px", width: "56px"}}/>
+          <img src="/logo.webp" alt="Logo" className="logo-img" style={{height:"56px", width: "56px"}}/>
           <button 
             className="logo-btn" 
             onClick={() => console.log('지도 홈으로 이동')}
