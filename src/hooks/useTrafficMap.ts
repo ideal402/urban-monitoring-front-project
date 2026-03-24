@@ -13,8 +13,7 @@ interface UseTrafficMapProps {
 }
 
 export function useTrafficMap({ viewStateZoom, rawGeoJson, rawApiData, centerLat, centerLng }: UseTrafficMapProps) {
-  const BASE_RES = 9;
-  
+
   // Worker 상태 관리
   const workerRef = useRef<Worker | null>(null);
   const [isWorkerCalculating, setIsWorkerCalculating] = useState(false);
