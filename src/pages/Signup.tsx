@@ -223,3 +223,5 @@ export const Signup: React.FC = () => {
     </main>
   );
 };
+
+export default Signup;

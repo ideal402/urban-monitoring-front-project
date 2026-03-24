@@ -1,32 +1,37 @@
-import React from 'react';
+// src/App.tsx 수정 코드
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './components/AuthRoute';
-import { Home } from './pages/Home';
-import { Signup } from './pages/Signup';
 import { useAuth } from './context/AuthContext';
 
-export const App: React.FC = () => {
+// 🚨 기존의 정적 Import 방식은 삭제 (또는 주석 처리)
+// import { Home } from './pages/Home';
+// import { Signup } from './pages/Signup';
 
+// ✨ React.lazy를 활용한 동적 Import (해당 경로에 진입할 때만 JS 파일을 다운로드함)
+const Home = React.lazy(() => import('./pages/Home'));
+const Signup = React.lazy(() => import('./pages/Signup'));
+
+export const App: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
-      {/* 누구나 접근 가능한 기본 라우트 */}
-      <Route path="/" element={<Home />} />
+    /* ✨ Suspense로 감싸기: 동적 로딩이 완료될 때까지 보여줄 UI(fallback)를 설정 */
+    <Suspense fallback={<div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading 화면...</div>}>
+      <Routes>
+        <Route path="/" element={<Home />} />
 
-      {/* PublicRoute: 인증된 사용자는 접근 불가 (접근 시 '/'로 리다이렉트) */}
-      <Route element={<PublicRoute isAuthenticated={isAuthenticated} />}>
-        <Route path="/signup" element={<Signup />} />
-      </Route>
+        <Route element={<PublicRoute isAuthenticated={isAuthenticated} />}>
+          <Route path="/signup" element={<Signup />} />
+        </Route>
 
-      {/* ProtectedRoute: 인증된 사용자만 접근 가능 (접근 시 '/login'으로 리다이렉트) */}
-      <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
-        {/* <Route path="/mypage" element={<MyPage />} /> */}
-      </Route>
+        <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
+          {/* <Route path="/mypage" element={<MyPage />} /> */}
+        </Route>
 
-      {/* 404 처리 */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
