@@ -1,8 +1,7 @@
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import { PathLayer, GeoJsonLayer } from '@deck.gl/layers';
-import { type LayerType } from '../components/Navbar'; // Navbar에서 만든 타입 임포트
+import { type LayerType } from '../components/Navbar';
 
-// 1. Deck.gl에서 요구하는 Color 튜플 타입 명시
 type RGBAColor = [number, number, number, number];
 
 interface MapLayerProps {
@@ -15,6 +14,10 @@ interface MapLayerProps {
   activeLayer: LayerType;
 }
 
+// ✨ 최적화 1: 불변(Immutable) 접근자 함수 외부 분리 (참조 고정)
+const getHexagon = (d: any) => d.hex;
+const getPath = (d: any) => d.path;
+
 const getAirQualityColor = (level: number): RGBAColor => {
   if (level >= 3.5) return [231, 76, 60, 200]; 
   if (level >= 2.5) return [230, 126, 34, 200]; 
@@ -23,11 +26,11 @@ const getAirQualityColor = (level: number): RGBAColor => {
 };
 
 const getTemperatureColor = (temp: number): RGBAColor => {
-  if (temp >= 30) return [231, 76, 60, 200];      // 30도 이상: 빨강 (더움)
-  if (temp >= 20) return [230, 126, 34, 200];     // 20도 이상: 주황 (따뜻함)
-  if (temp >= 10) return [46, 204, 113, 200];     // 10도 이상: 초록 (선선함)
-  if (temp >= 0)  return [52, 152, 219, 200];      // 0도 이상: 하늘색 (쌀쌀함)
-  return [41, 128, 185, 200];                     // 0도 미만: 파란색 (추움)
+  if (temp >= 30) return [231, 76, 60, 200];
+  if (temp >= 20) return [230, 126, 34, 200];
+  if (temp >= 10) return [46, 204, 113, 200];
+  if (temp >= 0)  return [52, 152, 219, 200];
+  return [41, 128, 185, 200];
 };
 
 export const createMapLayers = ({
@@ -41,19 +44,21 @@ export const createMapLayers = ({
 }: MapLayerProps) => {
   const layers = [];
 
+  // ✨ 최적화 2: 유효한 서울 H3 셀만 사전 필터링 (Deck.gl의 속성 생성 루프 모수 대폭 감소)
+  const validHexData = hexData.filter(d => displaySeoulH3Set.has(d.hex));
+
   switch (activeLayer) {
     case 'population':
       layers.push(
-        // @ts-ignore - H3HexagonLayer의 getFillColor 속성 상속 누락 우회
+        // @ts-ignore
         new H3HexagonLayer({
           id: 'population-hex-layer',
-          data: hexData,
+          data: validHexData, // 필터링된 데이터 주입
           pickable: true,
           extruded: false, 
-          getHexagon: (d: any) => d.hex,
-          // 3. getFillColor의 반환 타입을 RGBAColor로 명시
+          getHexagon, // 외부 정적 참조 사용
           getFillColor: (d: any): RGBAColor => {
-            if (!isDataLoaded || !displaySeoulH3Set.has(d.hex)) return [0, 0, 0, 0];
+            if (!isDataLoaded) return [150, 150, 150, 50];
             const data = displayDataMap.get(d.hex);
             if (data && data.congestion !== undefined) {
               if (data.congestion >= 3.5) return [231, 76, 60, 200];      
@@ -63,7 +68,7 @@ export const createMapLayers = ({
             }
             return [150, 150, 150, 50]; 
           },
-          updateTriggers: { getFillColor: [displaySeoulH3Set, isDataLoaded, displayDataMap] }
+          updateTriggers: { getFillColor: [isDataLoaded, displayDataMap] }
         })
       );
       break;
@@ -73,20 +78,19 @@ export const createMapLayers = ({
         // @ts-ignore
         new H3HexagonLayer({
           id: 'weather-hex-layer',
-          data: hexData,
+          data: validHexData,
           pickable: true,
           extruded: false,
-          getHexagon: (d: any) => d.hex,
+          getHexagon,
           getFillColor: (d: any): RGBAColor => {
-            if (!isDataLoaded || !displaySeoulH3Set.has(d.hex)) return [0, 0, 0, 0];
+            if (!isDataLoaded) return [0, 0, 0, 0];
             const data = displayDataMap.get(d.hex);
-            
             if (data && data.weather !== undefined) {
               return getTemperatureColor(data.weather); 
             }
             return [0, 0, 0, 0];
           },
-          updateTriggers: { getFillColor: [displaySeoulH3Set, isDataLoaded, displayDataMap] }
+          updateTriggers: { getFillColor: [isDataLoaded, displayDataMap] }
         })
       );
       break;
@@ -96,21 +100,19 @@ export const createMapLayers = ({
         // @ts-ignore
         new H3HexagonLayer({
           id: 'air-hex-layer',
-          data: hexData,
+          data: validHexData,
           pickable: true,
           extruded: false,
-          getHexagon: (d: any) => d.hex,
+          getHexagon,
           getFillColor: (d: any): RGBAColor => {
-            if (!isDataLoaded || !displaySeoulH3Set.has(d.hex)) return [0, 0, 0, 0];
+            if (!isDataLoaded) return [0, 0, 0, 0];
             const data = displayDataMap.get(d.hex);
-            
-            // 수정된 부분: data.air가 명시적으로 존재할 때만 색상을 매핑
             if (data && data.air !== undefined) {
               return getAirQualityColor(data.air);
             }
-            return [0, 0, 0, 0]; // 데이터가 없으면 투명하게 처리
+            return [0, 0, 0, 0];
           },
-          updateTriggers: { getFillColor: [displaySeoulH3Set, isDataLoaded, displayDataMap] }
+          updateTriggers: { getFillColor: [isDataLoaded, displayDataMap] }
         })
       );
       break;
@@ -123,8 +125,7 @@ export const createMapLayers = ({
           pickable: true,
           widthScale: 1,
           widthMinPixels: 3, 
-          getPath: (d: any) => d.path,
-          // PathLayer의 getColor도 명시 (deck.gl의 PathLayer가 요구함)
+          getPath,
           getColor: (d: any): RGBAColor => {
             switch (d.trafficIdx) {
               case '정체': return [231, 76, 60, 255]; 
